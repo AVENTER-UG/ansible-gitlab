@@ -1,0 +1,69 @@
+---
+
+  - name: "obtain runner registration token"
+    command: docker exec -it gitlab_web_1 gitlab-rails runner -e production "puts Gitlab::CurrentSettings.current_application_settings.runners_registration_token"
+    delegate_to: "{{ gitlab_master }}"
+    delegate_facts: True
+    register: runner_token
+
+  - debug:
+      var: runner_token
+
+  - name: "fact: set gitlab_runner_token"
+    set_fact:
+      gitlab_runner_token: "{{ runner_token.stdout }}"
+        
+  - name: Generate Gitlab-Runner Config
+    template:
+      src: config.toml.j2
+      dest: "{{ gitlab_home }}/gitlab-runner/config/config.toml"
+      mode: 0644
+
+  - name: "compose: create gitlab runner services"
+    community.general.docker_compose:
+      project_name: gitlab
+      definition:
+        version: "3"
+        networks:
+          default:
+            external:
+              name: weave
+        services:
+          runner:
+            image: "gitlab/gitlab-runner:alpine"
+            hostname: "gitlabrunner.weave.local"
+            environment:
+              WEAVE_CIDR: 10.32.0.2/12
+              GITLAB_DATABASE_ADAPTER: "postgresql"
+              GITLAB_DATABASE_HOST: gitlabdb.weave.local
+              GITLAB_DATABASE_PORT: 5432
+              GITLAB_DATABASE_USERNAME: "{{ gitlab_db_user }}"
+              GITLAB_DATABASE_PASSWORD: "{{ gitlab_db_password }}"
+              GITLAB_DATABASE_DATABASE: gitlabhq_prod
+              GITLAB_HOST: "http://gitlab.weave.local"
+              GITLAB_ROOT_PASSWORD: "{{ gitlab_root_password }}"
+              GITLAB_SHARED_RUNNERS_REGISTRATION_TOKEN: "{{ gitlab_runner_token }}"
+            volumes:
+              - "{{ gitlab_home }}/gitlab-runner/config:/etc/gitlab-runner"
+              - "{{ gitlab_home }}/gitlab-runner/certs:/etc/gitlab-runner/certs"
+              - "/var/run/docker.sock:/var/run/docker.sock"
+            networks:
+              - default
+
+    register: output
+
+  - debug:
+      var: output
+
+  - name: Copy SSL Certificate to Server
+    copy:
+      src: "/tmp/{{ groups['gitlab'][0] }}.crt"
+      dest: "{{ gitlab_home }}/gitlab-runner/certs/{{ groups['gitlab'][0] }}.crt"
+      mode: "0644"
+
+  - name: "runner: register new runner"
+    command: "docker exec -it gitlab_runner_1 gitlab-runner register -n -r {{ gitlab_runner_token }} -u https://{{ groups['gitlab'][0] }} --tls-ca-file=/etc/gitlab-runner/certs/{{ groups['gitlab'][0] }}.crt --executor docker"
+    register: register
+
+  - debug:
+      var: register

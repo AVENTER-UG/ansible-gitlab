@@ -1,0 +1,55 @@
+- name: "Gather all hosts information"
+  gather_facts: yes
+  hosts: all
+  tags:
+    - gitlab
+    - runner
+    - dockerssl
+     
+- name: "Install Gitlab"
+  hosts: all
+  roles:
+    - role: weave    
+    - role: gitlab
+      tags:
+       - gitlab
+       - update
+
+- name: "Create SSL Certificate"
+  hosts: all
+  roles:
+    - role: ssl
+      tags:
+       - ssl
+       - gitlab
+
+- hosts: all
+  vars_prompt:
+    - name: gitlab_master
+      prompt: "Gitlab Masters FQDN"
+      default: gitlabmaster.local
+  tags:
+    - runner
+    - dockerssl
+
+- name: "Install Gitlab Runner"
+  hosts: runner
+  roles:
+    - role: gitlab-runner
+      tags:
+        - runner
+
+- name: "Configure Docker Client with Gitlab SSL"
+  hosts: all
+  become: true
+  roles:
+    - role: docker-ssl
+      tags:
+        - dockerssl
+
+- name: "Install Trivy Scanner"
+  hosts: gitlab
+  roles:
+    - role: trivy
+      tags:
+        - trivy

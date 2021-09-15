@@ -1,0 +1,17 @@
+image: busybox:latest
+
+build:
+  stage: build
+  script:
+    - echo "Test"
+
+test:
+  stage: test
+  script:
+    - echo "Test Test"
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Test Test Test"
+

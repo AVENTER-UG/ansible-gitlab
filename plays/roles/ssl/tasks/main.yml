@@ -1,0 +1,43 @@
+---
+
+  - name: Check if SSL Certificate Exist
+    stat: 
+      path: "{{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.key"
+    register: ssl_cert
+
+  - name: Copy ssl configuration file
+    template: src=gitlab.cnf.j2 dest=/etc/pki/tls/gitlab.cnf mode=0644
+    when: ssl_cert.stat.exists == False
+
+  - name: Create SSL Directory
+    file:
+      path: "{{ gitlab_home }}/gitlab/config/ssl/"
+      state: directory
+    when: ssl_cert.stat.exists == False
+
+  - name: Generate Private Key
+    command: openssl genrsa -out {{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.key 2048
+    when: ssl_cert.stat.exists == False
+
+  - name: Create CSR
+    command: openssl req -subj "/C=DE/ST=NRW, Inc./CN={{ inventory_hostname }}"  -new -out {{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.csr -key {{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.key -config /etc/pki/tls/gitlab.cnf
+    when: ssl_cert.stat.exists == False
+
+  - name: Dump Certificate
+    command: openssl req -text -noout -in {{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.csr
+    register: dump_csr
+
+  - debug:
+      var: dump_csr
+
+  - name: Self Sign Certificate
+    command: openssl x509 -req -days 3650 -in  {{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.csr  -signkey {{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.key  -out {{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.crt -extensions v3_req -extfile /etc/pki/tls/gitlab.cnf
+    when: ssl_cert.stat.exists == False
+
+  - name: Fetch Self Sign Certificate
+    fetch:
+      dest: "/tmp/{{ inventory_hostname }}.crt"
+      src: "{{ gitlab_home }}/gitlab/config/ssl/{{ inventory_hostname }}.crt"
+      flat: yes
+
+

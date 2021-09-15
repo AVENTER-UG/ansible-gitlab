@@ -1,0 +1,10 @@
+ansible_python_interpreter: /usr/bin/python3
+
+gitlab_home: "/srv/gitlab"
+
+gitlab_db_user: "gitlab"
+gitlab_db_password: "gitlab"
+gitlab_root_password: ""
+
+
+

@@ -1,0 +1,74 @@
+---
+
+- name: "Check if docker exist"
+  stat: 
+    path: "/etc/docker"
+  register: docker
+
+- name: "Check if daemon.json exist"
+  stat: 
+    path: "/etc/docker/daemon.json"
+  register: docker_conf
+
+- name: "Load daemon.json"
+  slurp:
+    src: "/etc/docker/daemon.json"
+  register: imported_docker_conf
+  when: docker_conf.stat.exists == True
+
+- name: "fact: set daemon config"
+  set_fact:
+    docker_daemon: "{{ imported_docker_conf.content | b64decode | from_json }}"
+  when: docker_conf.stat.exists == True
+
+- debug:
+    var: "docker_daemon"
+  when: docker_conf.stat.exists == True
+
+- name: "Copy daemon.json"
+  template:
+    src: "daemon.json.j2"
+    dest: "/etc/docker/daemon.json"
+    mode: 0640
+  when: docker_conf.stat.exists == False and docker.stat.exists == True
+
+- name: "Append insecure Gitlab Repo"
+  set_fact:
+    imported_docker_conf: '{{ docker_daemon | default([]) | combine({ item.0: item.1 }) }}'
+  with_together:
+    - "insecure-registries"
+    - "{{ gitlab_master }}:5050"
+  when: docker_conf.stat.exists == True
+
+- name: "Write new daemon.json"
+  copy: 
+    content: "{{ imported_docker_conf | to_nice_json }}" 
+    dest: /etc/docker/daemon.json
+  when: docker_conf.stat.exists == True
+
+- debug:
+    var: imported_docker_conf
+
+- name: "Fetch Self Sign Certificate"
+  fetch:
+    dest: "/tmp/{{ gitlab_master }}.crt"
+    src: "{{ gitlab_home }}/gitlab/config/ssl/{{ gitlab_master }}.crt"
+    flat: yes
+  delegate_to: "{{ gitlab_master }}"
+  when: docker.stat.exists == True
+
+- name: Create SSL Dir
+  file:
+    path: "/etc/docker/certs.d/{{ gitlab_master }}:5050"
+    state: directory
+  when: docker.stat.exists == True
+  
+- name: Copy SSL Certificate to Server
+  copy:
+    src: "/tmp/{{ gitlab_master }}.crt"
+    dest: "/etc/docker/certs.d/{{ gitlab_master }}:5050/ca.crt"
+    mode: "0644"
+  when: docker.stat.exists == True
+
+
+

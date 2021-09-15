@@ -1,0 +1,52 @@
+ansible_python_interpreter: /usr/bin/python3
+
+gitlab_home: "/srv/gitlab"
+gitlab_external_url: "https://{{ inventory_hostname }}"
+gitlab_ssh_port: "2222"
+gitlab_https: "false"
+gitlab_ssl_self_signed: "true"
+gitlab_relative_url_root: ""
+
+gitlab_notify_on_broken_builds: "true"
+gitlab_notify_pusher: "true"
+
+tz: "Germany/Berlin"
+gitlab_tz: "/Berlin"
+gitlab_db_user: "gitlab"
+gitlab_db_password: "gitlab"
+gitlab_init_root_password: "12345678"
+gitlab_root_email: ""
+
+gitlab_email: "noreply@localhost.com"
+gitlab_email_reply_to: "noreply@localhost.com"
+gitlab_incoming_email_address: "reply@localhost.com"
+
+gitlab_registry_enabled: "true"
+
+gitlab_smtp_enabled: "false"
+gitlab_smtp_domain: ""
+gitlab_smtp_host: ""
+gitlab_smtp_port: ""
+gitlab_smtp_user: ""
+gitlab_smtp_pass: ""
+gitlab_smtp_starttls: "false"
+gitlab_smtp_authentication: "local"
+
+gitlab_ldap_enabled: "false"
+gitlab_ldap_prevent_ldap_sign_in: "false"
+gitlab_ldap_servers: "{}"
+
+gitlab_ldap_host: ""
+gitlab_ldap_port: "636"
+gitlab_ldap_uid: "uid"
+gitlab_ldap_verify_certificates: false
+gitlab_ldap_bind_dn: ""
+gitlab_ldap_password: ""
+gitlab_ldap_encryption: "simple_tls"
+gitlab_ldap_timeout: 10
+gitlab_ldap_active_directory: "false"
+gitlab_ldap_allow_username_or_email_login: "false"
+gitlab_ldap_block_auto_created_users: "false"
+gitlab_ldap_base: ""
+
+gitlab_backup_keep_time: 86400

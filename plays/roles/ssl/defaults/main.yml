@@ -1,0 +1,7 @@
+gitlab_home: "/srv/gitlab"
+
+ssl_countryName: "DE"
+ssl_stateOrProvinceName: "A"
+ssl_localityName: "City"
+ssl_DNS_3: "*.localhost.local"
+

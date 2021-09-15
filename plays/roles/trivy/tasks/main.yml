@@ -1,0 +1,28 @@
+---
+
+  - name: "compose: create trivy services"
+    community.general.docker_compose:
+      project_name: trivy
+      definition:
+        version: "3"
+        networks:
+          default:
+            external:
+              name: weave
+        services:
+          runner:
+            image: "aquasec/trivy:0.16.0"
+            hostname: "trivy.weave.local"
+            command: "server --listen 0.0.0.0:8080"
+            environment:
+              WEAVE_CIDR: 10.32.0.2/12
+              TRIVY_NON_SSL: "true"
+            networks:
+              - default
+            ports:
+              - 8080:8080
+
+    register: output
+
+  - debug:
+      var: output

@@ -1,0 +1,39 @@
+---
+
+- name: download Weave
+  get_url: url=https://github.com/weaveworks/weave/releases/download/{{ weave_version }}/weave dest=/usr/local/bin/ mode=0755
+  tags:
+    - weave
+
+- name: copy Weave systemd scripts into place
+  copy: src={{ item }} dest=/etc/systemd/system mode=0755
+  with_items:
+    - weave.service
+  tags:
+    - weave
+
+- name: copy Weave env
+  template: src=weave.env.j2 dest=/etc/weave.env mode=0644
+  tags:
+    - weave
+
+- name: reload systemd
+  command: systemctl daemon-reload
+  tags:
+    - weave
+  
+- name: pull weave image
+  command: /usr/local/bin/weave setup
+  tags:
+    - weave
+
+- name: start weave
+  service:
+    name: "weave"
+    enabled: yes
+    state: started
+  ignore_errors: true    
+  tags:
+    - weave
+  
+

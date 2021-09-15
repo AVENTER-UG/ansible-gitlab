@@ -1,0 +1,75 @@
+---
+
+  - name: Create Gitlab Config Directory
+    file:
+      path: "{{ gitlab_home }}/gitlab/config/"
+      state: directory
+
+  - name: Copy Gitlab Config
+    template:
+      src: gitlab.rb.j2
+      dest: "{{ gitlab_home }}/gitlab/config/gitlab.rb"
+      mode: 0644
+
+  - name: "compose: create gitlab services"
+    community.general.docker_compose:
+      project_name: gitlab
+      definition:
+        version: "3"
+        networks:
+          default:
+            external:
+              name: weave
+
+        services:
+          db:
+            image: postgres:11
+            hostname: gitlabdb.weave.local
+            volumes:
+              - "{{ gitlab_home }}/database/data:/var/lib/postgresql/data"
+              - "{{ gitlab_home }}/database/config:/config/sql"
+            environment:
+              WEAVE_CIDR: 10.32.0.2/12
+              POSTGRES_USER: "{{ gitlab_db_user }}"
+              POSTGRES_PASSWORD: "{{ gitlab_db_password }}"
+              POSTGRES_DB: gitlabhq_prod
+            networks:
+              - default
+
+          redis:
+            image: redis:alpine
+            hostname: gitlabredis.weave.local
+            environment:
+              REDIS_DB: "1"
+              WEAVE_CIDR: 10.32.0.2/12
+            networks:
+              - default
+
+          web:
+            image: "gitlab/gitlab-ce:13.7.4-ce.0"
+            hostname: "gitlab.weave.local"
+            environment:
+              WEAVE_CIDR: 10.32.0.2/12
+              GITLAB_EMAIL_FROM: "{{ gitlab_email }}"
+              GITLAB_EMAIL_REPLY_TO: "{{ gitlab_email_reply_to }}"
+              GITLAB_HOST: localhost
+            volumes:
+              - "{{ gitlab_home }}/gitlab/config:/etc/gitlab"
+              - "{{ gitlab_home }}/gitlab/logs:/var/log/gitlab"
+              - "{{ gitlab_home }}/gitlab/data:/var/opt/gitlab"
+              - "{{ gitlab_home }}/registry:/registry"
+            ports:
+              - "80:80"
+              - "443:443"
+              - "5050:5050"
+              - "{{ gitlab_ssh_port }}:22"
+            depends_on:
+              - db
+              - redis
+            networks:
+              - default
+    register: output
+
+  - debug:
+      var: output
+
