@@ -6,5 +6,7 @@ gitlab_db_user: "gitlab"
 gitlab_db_password: "gitlab"
 gitlab_root_password: ""
 
+gitlab_runner_token: "DEMO_VspYs2f8kVDkVzSHxzf_"
+
 
 

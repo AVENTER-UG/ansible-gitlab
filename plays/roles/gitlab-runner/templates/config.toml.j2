@@ -7,7 +7,7 @@ check_interval = 0
 [[runners]]
   name = "gitlabrunner.weave.local"
   url = "https://{{ groups['gitlab'][0] }}"
-  token = "VspYs2f8kVDkVzSHxzf_"
+  token = "{{ gitlab_runner_token }}
   tls-ca-file = "/etc/gitlab-runner/certs/{{ groups['gitlab'][0] }}.crt"
   executor = "docker"
   [runners.custom_build_dir]
